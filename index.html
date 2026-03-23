@@ -5,6 +5,10 @@
   <title>Timbreuse</title>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
   <meta name="theme-color" content="#070b14">
+  <link rel="icon" type="image/png" sizes="512x512" href="https://luisfsantossilva-dotcom.github.io/timbreuse/iconT.png">
+  <link rel="apple-touch-icon" href="https://luisfsantossilva-dotcom.github.io/timbreuse/iconT.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
   <style>
@@ -278,7 +282,7 @@
       </div>
       <div class="mt6"><label class="flabel">Remarque</label><input type="text" id="tdNote" class="fi" style="width:100%" placeholder="Observations..."></div>
       <div class="finline"><input type="checkbox" id="tdDinner"><label for="tdDinner">Indemnité dîner (<span id="dinLbl">16</span> CHF)</label></div>
-      <div class="mt10"><button class="btn btn-a btn-sm" id="btnSaveToday">Enregistrer ↗ Sync</button></div>
+      <div class="mt10"><button class="btn btn-a btn-sm" id="btnSaveToday">Enregistrer ↗ Sheets</button></div>
       <div id="punchLog" class="plog"></div>
     </div>
 
@@ -336,43 +340,44 @@
 <!-- ══ RÉGLAGES ══ -->
 <div id="tab-settings" class="tab">
   <div style="padding:16px">
-    <!-- Apps Script — principal section -->
+
+    <!-- Google Sheets — principal section -->
     <div class="card" style="border-color:rgba(16,185,129,.35)">
       <div class="card-ttl" style="color:var(--green);display:flex;align-items:center;gap:7px">
         <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        Google Sheets — via Apps Script
+        Google Sheets — sincronização
       </div>
 
       <div id="sheetSetupBox">
         <div class="sheets-info">
-          <strong style="color:var(--green)">Configuração simples:</strong><br>
-          1. Criar um <strong>Google Apps Script Web App</strong><br>
-          2. Definir um <strong>token secreto</strong> no script<br>
-          3. Colar abaixo o <strong>URL /exec</strong> e o token, depois clicar <strong>Conectar</strong>
+          <strong style="color:var(--green)">Como configurar (3 passos):</strong><br>
+          1. <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> → novo projeto → activar <strong>Google Sheets API</strong> + <strong>Google Drive API</strong><br>
+          2. Credenciais → OAuth 2.0 (Aplicação Web) → adicionar este URL em <em>Origens autorizadas</em><br>
+          3. Colar o Client ID abaixo e clicar Conectar
         </div>
-        <label class="flabel mt8">URL do Web App Apps Script</label>
-        <input type="text" id="cfgScriptUrl" class="fi" style="width:100%" placeholder="https://script.google.com/macros/s/.../exec">
-        <label class="flabel mt6">Token de segurança</label>
-        <input type="password" id="cfgSyncToken" class="fi" style="width:100%" placeholder="Token secreto do script">
+        <label class="flabel mt8">Client ID OAuth Google</label>
+        <input type="text" id="cfgGId" class="fi" style="width:100%" placeholder="xxx.apps.googleusercontent.com">
+        <label class="flabel mt6">Nome da folha (opcional)</label>
+        <input type="text" id="cfgSheetName" class="fi" style="width:100%" placeholder="Timbreuse">
         <div class="btn-row mt10">
-          <button class="btn btn-g btn-sm" id="btnScriptConnect">🔗 Conectar Apps Script</button>
+          <button class="btn btn-g btn-sm" id="btnSheetsConnect">🔗 Conectar Google</button>
         </div>
       </div>
 
       <div id="sheetConnectedBox" style="display:none">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
           <div style="width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0"></div>
-          <span style="font-size:.85rem;font-weight:600;color:var(--green)">Ligado — sincronização automática activa</span>
+          <span style="font-size:.85rem;font-weight:600;color:var(--green)">Conectado — sincronização automática activa</span>
         </div>
         <div id="sheetLinkBox" style="display:none">
           <div class="flabel">Abre a folha Google Sheets:</div>
           <div id="sheetLink" class="sheets-url" onclick="openSheet()">—</div>
         </div>
         <div class="btn-row mt10">
-          <button class="btn btn-g btn-sm" id="btnScriptSync">🔄 Sincronizar agora</button>
-          <button class="btn btn-s btn-sm" id="btnScriptDisc">Desligar sync</button>
+          <button class="btn btn-g btn-sm" id="btnSheetsSync">🔄 Sincronizar agora</button>
+          <button class="btn btn-s btn-sm" id="btnSheetsDisc">Desconectar</button>
         </div>
-        <p class="muted mt6">Os dados são guardados localmente e sincronizados automaticamente quando registas cada dia.</p>
+        <p class="muted mt6">Dados guardados automaticamente ao registar cada dia.</p>
       </div>
     </div>
 
@@ -418,7 +423,7 @@
       <input type="file" id="fileJson" accept=".json" style="display:none">
       <div class="mt10"><button class="btn btn-d btn-sm" id="btnReset">Apagar todos os dados</button></div>
     </div>
-    <p class="muted" style="text-align:center;padding:12px 0 0">Timbreuse v13 · centièmes · Apps Script sync</p>
+    <p class="muted" style="text-align:center;padding:12px 0 0">Timbreuse v13 · centièmes · Google Sheets sync</p>
   </div>
 </div><!-- /settings -->
 </div><!-- /content -->
@@ -496,11 +501,11 @@ const SK="tmb_v13_entries", SKCFG="tmb_v13_cfg";
 const SKO="timbreuse_v12_entries", SKCFO="timbreuse_v12_settings";
 
 /* ═══ STATE ═══ */
-let entries=[], cfg={name:"",target:174,baseOT:21.75,morning:.5,dinner:16,region:"catholic",lockHolidays:false,scriptUrl:"",syncToken:"",syncEnabled:false,spreadsheetId:"",spreadsheetUrl:""};
+let entries=[], cfg={name:"",target:174,baseOT:21.75,morning:.5,dinner:16,region:"catholic",lockHolidays:false,googleClientId:"",sheetName:"Timbreuse",spreadsheetId:""};
 let filterMk="all", meEditDate=null, activeTab="today";
 let curPhotoData=null;
-// Sync state
-let syncConnected=false;
+// Sheets state
+let gToken=null, tokenClient=null, sheetsReady=false;
 
 /* ═══ UTILS ═══ */
 const $=id=>document.getElementById(id);
@@ -542,9 +547,10 @@ function ensureE(d){let e=getE(d);if(!e){e=emptyE(d);entries.push(e);}return e;}
 function filtered(){return filterMk==="all"?entries:entries.filter(e=>mkMonth(e.date)===filterMk);}
 
 /* ═══════════════════════════════════════
-   APPS SCRIPT SYNC
+   GOOGLE SHEETS SYNC
    Colunas: Date|Start|End|Lunch|Vacation|ExtraUsed|Dinner|Site|Note|Punches
    ═══════════════════════════════════════ */
+const SHEET_RANGE = "Dados!A:J";
 const SHEET_HEADER = ["Date","Start","End","Lunch","Vacation","ExtraUsed","Dinner","Site","Note","Punches"];
 
 function setSyncStatus(type, txt){
@@ -553,177 +559,136 @@ function setSyncStatus(type, txt){
   $("syncTxt").textContent=txt;
 }
 
-function normalizeScriptUrl(url){return String(url||"").trim().replace(/[?#].*$/,"").replace(/\/$/,"");}
+async function gRequest(url, opts={}){
+  if(!gToken) throw new Error("Não autenticado");
+  const headers={"Authorization":`Bearer ${gToken}`, "Content-Type":"application/json", ...(opts.headers||{})};
+  const res=await fetch(url,{...opts,headers});
+  if(res.status===401){gToken=null;setSyncStatus("ko","Token expirado");throw new Error("Token expirado — reconecta");}
+  if(!res.ok){const t=await res.text();throw new Error(`Sheets API ${res.status}: ${t.slice(0,120)}`);}
+  return res.json();
+}
 
-async function apiRequest(action, payload=null, method="GET"){
-  const base=normalizeScriptUrl(cfg.scriptUrl);
-  const token=(cfg.syncToken||"").trim();
-  if(!base) throw new Error("URL Apps Script em falta");
-  if(!token) throw new Error("Token de segurança em falta");
-
-  let res;
-  if(method==="POST"){
-    const body=new URLSearchParams();
-    body.set("action",action);
-    body.set("token",token);
-    body.set("payload",JSON.stringify(payload||{}));
-    res=await fetch(base,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:body.toString()});
-  }else{
-    const qs=new URLSearchParams({action,token,_ts:String(Date.now())});
-    res=await fetch(`${base}?${qs.toString()}`,{method:"GET",cache:"no-store"});
+async function ensureSpreadsheet(){
+  if(cfg.spreadsheetId){
+    // Verify it still exists
+    try{
+      await gRequest(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}?fields=spreadsheetId`);
+      return cfg.spreadsheetId;
+    }catch(e){cfg.spreadsheetId="";}
   }
-
-  const raw=await res.text();
-  if(!res.ok) throw new Error(`HTTP ${res.status}: ${raw.slice(0,160)}`);
-  let data;
-  try{data=JSON.parse(raw);}catch(e){throw new Error("Resposta JSON inválida do Apps Script");}
-  if(!data.ok) throw new Error(data.error||"Erro de sincronização");
-  return data;
-}
-
-function normalizeImportedEntry(r){
-  const date=r?.date||"";
-  return {
-    ...emptyE(date||nowKey()),
-    date,
-    start:r?.start||"",
-    end:r?.end||"",
-    lunch:String(r?.lunch??"1"),
-    vacation:String(r?.vacation??"0"),
-    extraUsed:String(r?.extraUsed??"0"),
-    dinner:r?.dinner===true||r?.dinner==="1"||r?.dinner==="true",
-    site:r?.site||"",
-    note:r?.note||"",
-    punches:Array.isArray(r?.punches)?r.punches:[]
-  };
-}
-
-function exportableEntries(){
-  return entries
-    .filter(e=>e.date)
-    .sort((a,b)=>a.date.localeCompare(b.date))
-    .map(e=>({
-      date:e.date,
-      start:e.start||"",
-      end:e.end||"",
-      lunch:e.lunch||"1",
-      vacation:e.vacation||"0",
-      extraUsed:e.extraUsed||"0",
-      dinner:!!e.dinner,
-      site:e.site||"",
-      note:e.note||"",
-      punches:Array.isArray(e.punches)?e.punches:[]
-    }));
-}
-
-function setSyncConnected(on){
-  syncConnected=!!on;
-  $("sheetSetupBox").style.display=on?"none":"block";
-  $("sheetConnectedBox").style.display=on?"block":"none";
-}
-
-async function connectScript(){
-  const url=normalizeScriptUrl(($("cfgScriptUrl").value||cfg.scriptUrl).trim());
-  const token=($("cfgSyncToken").value||cfg.syncToken).trim();
-  if(!url){toast("Coloca o URL /exec do Apps Script","err");return;}
-  if(!token){toast("Coloca o token de segurança","err");return;}
-
-  cfg.scriptUrl=url;
-  cfg.syncToken=token;
-  cfg.syncEnabled=true;
-  saveCfg();
-
+  // Search in Drive for existing "Timbreuse" sheet
+  const sheetName=cfg.sheetName||"Timbreuse";
   try{
-    setSyncStatus("busy","A ligar...");
-    const ping=await apiRequest("ping");
-    cfg.spreadsheetId=ping.spreadsheetId||cfg.spreadsheetId||"";
-    cfg.spreadsheetUrl=ping.spreadsheetUrl||cfg.spreadsheetUrl||"";
-    saveCfg();
-    setSyncConnected(true);
-    updateSheetLink(ping.spreadsheetUrl);
-    setSyncStatus("ok","Sync ✓");
-    toast("Apps Script conectado ✅","ok");
-    await scriptLoad();
-  }catch(err){
-    cfg.syncEnabled=false;
-    saveCfg();
-    setSyncConnected(false);
-    setSyncStatus("ko","Erro ligação");
-    toast("Erro Apps Script: "+err.message,"err");
-  }
+    const q=encodeURIComponent(`name='${sheetName}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`);
+    const res=await gRequest(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)&pageSize=5`);
+    if(res.files?.length){cfg.spreadsheetId=res.files[0].id;saveCfg();return cfg.spreadsheetId;}
+  }catch(e){}
+  // Create new spreadsheet
+  const body={properties:{title:sheetName},sheets:[{properties:{title:"Dados"}}]};
+  const res=await gRequest("https://sheets.googleapis.com/v4/spreadsheets",{method:"POST",body:JSON.stringify(body)});
+  cfg.spreadsheetId=res.spreadsheetId;saveCfg();
+  // Write header row
+  await gRequest(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/Dados!A1:J1?valueInputOption=RAW`,{method:"PUT",body:JSON.stringify({values:[SHEET_HEADER]})});
+  toast(`Folha "${sheetName}" criada no Google Drive ✅`,"ok");
+  return cfg.spreadsheetId;
 }
 
-function disconnectScript(){
-  cfg.syncEnabled=false;
-  saveCfg();
-  setSyncConnected(false);
-  setSyncStatus("idle","Local");
-  toast("Sincronização desligada","inf");
-}
-
-async function scriptLoad(){
+async function sheetsLoad(){
   setSyncStatus("busy","A carregar...");
   try{
-    const res=await apiRequest("load");
-    const imported=(Array.isArray(res.entries)?res.entries:[])
-      .map(normalizeImportedEntry)
-      .filter(e=>/^\d{4}-\d{2}-\d{2}$/.test(e.date));
-    const importedDates=new Set(imported.map(e=>e.date));
-    const localOnly=entries.filter(e=>!importedDates.has(e.date));
+    const sid=await ensureSpreadsheet();
+    const url=`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${SHEET_RANGE}`;
+    const res=await gRequest(url);
+    const rows=res.values||[];
+    if(rows.length<2){setSyncStatus("ok","Sheets ✓");return;}// empty or header only
+    const header=rows[0];
+    const iD=header.indexOf("Date"),iS=header.indexOf("Start"),iE=header.indexOf("End"),
+      iL=header.indexOf("Lunch"),iV=header.indexOf("Vacation"),iHs=header.indexOf("ExtraUsed"),
+      iDn=header.indexOf("Dinner"),iSt=header.indexOf("Site"),iN=header.indexOf("Note"),iP=header.indexOf("Punches");
+    const imported=[];
+    for(let i=1;i<rows.length;i++){
+      const r=rows[i];
+      const date=r[iD]||"";if(!/^\d{4}-\d{2}-\d{2}$/.test(date))continue;
+      let punches=[];try{if(iP>=0&&r[iP])punches=JSON.parse(r[iP]);}catch(x){}
+      imported.push({...emptyE(date),date,start:r[iS]||"",end:r[iE]||"",lunch:r[iL]||"1",vacation:r[iV]||"0",extraUsed:r[iHs]||"0",dinner:r[iDn]==="1"||r[iDn]==="true",site:r[iSt]||"",note:r[iN]||"",punches});
+    }
+    // Merge: sheet wins for imported dates, keep local entries not in sheet
+    const sheetDates=new Set(imported.map(e=>e.date));
+    const localOnly=entries.filter(e=>!sheetDates.has(e.date));
     entries=[...imported,...localOnly].sort((a,b)=>a.date.localeCompare(b.date));
-    cfg.spreadsheetId=res.spreadsheetId||cfg.spreadsheetId||"";
-    cfg.spreadsheetUrl=res.spreadsheetUrl||cfg.spreadsheetUrl||"";
-    saveCfg();
-    saveLocal();
-    renderAll();
-    setSyncConnected(true);
-    updateSheetLink(res.spreadsheetUrl);
-    setSyncStatus("ok",`Sync ✓ ${imported.length} dias`);
-  }catch(err){
-    setSyncStatus("ko","Erro sync");
-    toast("Erro a carregar sync: "+err.message,"err");
-    throw err;
-  }
+    saveLocal();renderAll();
+    setSyncStatus("ok",`Sheets ✓ ${imported.length} dias`);
+    updateSheetLink();
+  }catch(err){setSyncStatus("ko","Erro sync");toast("Erro a carregar Sheets: "+err.message,"err");}
 }
 
-async function scriptWrite(){
-  if(!cfg.syncEnabled||!cfg.scriptUrl||!cfg.syncToken)return;
+async function sheetsWrite(){
+  if(!gToken||!cfg.spreadsheetId)return;
   setSyncStatus("busy","A guardar...");
   try{
-    const res=await apiRequest("save",{entries:exportableEntries()},"POST");
-    cfg.spreadsheetId=res.spreadsheetId||cfg.spreadsheetId||"";
-    cfg.spreadsheetUrl=res.spreadsheetUrl||cfg.spreadsheetUrl||"";
-    saveCfg();
-    setSyncConnected(true);
-    updateSheetLink(res.spreadsheetUrl);
-    setSyncStatus("ok","Sync ✓");
-  }catch(err){
-    setSyncStatus("ko","Erro ao guardar");
-    toast("Erro sync: "+err.message,"err");
-    throw err;
-  }
+    const sid=cfg.spreadsheetId;
+    const values=[SHEET_HEADER,...entries.filter(e=>e.date).sort((a,b)=>a.date.localeCompare(b.date)).map(e=>[
+      e.date,e.start||"",e.end||"",e.lunch||"1",e.vacation||"0",e.extraUsed||"0",e.dinner?"1":"0",e.site||"",e.note||"",
+      e.punches?.length?JSON.stringify(e.punches):""
+    ])];
+    await gRequest(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/Dados!A:J?valueInputOption=RAW`,{method:"PUT",body:JSON.stringify({values})});
+    setSyncStatus("ok","Sheets ✓");
+  }catch(err){setSyncStatus("ko","Erro ao guardar");toast("Erro Sheets: "+err.message,"err");throw err;}
 }
 
 async function saveAndSync(date){
   saveLocal();renderAll();
-  if(cfg.syncEnabled&&cfg.scriptUrl&&cfg.syncToken){try{await scriptWrite();}catch(e){}}
-  else setSyncStatus("idle","Local");
+  if(gToken){try{await sheetsWrite();}catch(e){}}
 }
 
 async function manualSync(){
-  if(!cfg.syncEnabled||!cfg.scriptUrl||!cfg.syncToken){toast("Liga o Apps Script nos Réglages","inf");showTab("settings");return;}
-  await scriptLoad();
+  if(!gToken){toast("Liga o Google Sheets nos Réglages","inf");showTab("settings");return;}
+  await sheetsLoad();
 }
 
-function updateSheetLink(url){
-  const finalUrl=url||cfg.spreadsheetUrl||(cfg.spreadsheetId?`https://docs.google.com/spreadsheets/d/${cfg.spreadsheetId}/edit`:"");
-  if(!finalUrl)return;
-  cfg.spreadsheetUrl=finalUrl;
-  $("sheetLink").textContent=finalUrl;
-  $("sheetLink").dataset.url=finalUrl;
+function updateSheetLink(){
+  if(!cfg.spreadsheetId)return;
+  const url=`https://docs.google.com/spreadsheets/d/${cfg.spreadsheetId}/edit`;
+  $("sheetLink").textContent=url;
+  $("sheetLink").dataset.url=url;
   $("sheetLinkBox").style.display="block";
 }
 function openSheet(){const url=$("sheetLink").dataset.url;if(url)window.open(url,"_blank");}
+
+/* ═══ GOOGLE AUTH ═══ */
+async function connectGoogle(){
+  const clientId=($("cfgGId").value||"").trim()||cfg.googleClientId;
+  if(!clientId){toast("Coloca o Client ID OAuth nos Réglages","err");return;}
+  cfg.googleClientId=clientId;
+  cfg.sheetName=($("cfgSheetName").value||"Timbreuse").trim();
+  saveCfg();
+  if(typeof google==="undefined")await loadScript("https://accounts.google.com/gsi/client");
+  try{
+    tokenClient=google.accounts.oauth2.initTokenClient({
+      client_id:cfg.googleClientId,
+      scope:"https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file",
+      callback:async resp=>{
+        if(resp.error){setSyncStatus("ko","Erro auth");toast("Erro OAuth: "+resp.error,"err");return;}
+        gToken=resp.access_token;sheetsReady=true;
+        setSyncStatus("busy","A conectar...");
+        $("sheetSetupBox").style.display="none";
+        $("sheetConnectedBox").style.display="block";
+        $("btnSheetsConnect").style.display="none";
+        await sheetsLoad();
+        toast("Google Sheets conectado ✅","ok");
+      }
+    });
+    tokenClient.requestAccessToken({prompt:"consent"});
+  }catch(e){setSyncStatus("ko","Erro");toast("Erro: "+e.message,"err");}
+}
+
+function disconnectGoogle(){
+  gToken=null;sheetsReady=false;tokenClient=null;
+  setSyncStatus("idle","Local");
+  $("sheetSetupBox").style.display="block";
+  $("sheetConnectedBox").style.display="none";
+  toast("Google desconectado","inf");
+}
 
 /* ═══ CALC ═══ */
 function totalMonthly(){return cfg.target+cfg.baseOT;}
@@ -969,10 +934,11 @@ function renderHistory(){
 function applySettings(){
   $("cfgName").value=cfg.name||"";$("cfgTarget").value=cfg.target;$("cfgBaseOT").value=cfg.baseOT;
   $("cfgMorning").value=cfg.morning;$("cfgDinner").value=cfg.dinner;$("cfgRegion").value=cfg.region;
-  $("cfgLock").checked=!!cfg.lockHolidays;$("cfgScriptUrl").value=cfg.scriptUrl||"";
-  $("cfgSyncToken").value=cfg.syncToken||"";updateTotals();
-  setSyncConnected(!!(cfg.syncEnabled&&cfg.scriptUrl&&cfg.syncToken));
-  if(cfg.spreadsheetUrl||cfg.spreadsheetId)updateSheetLink();
+  $("cfgLock").checked=!!cfg.lockHolidays;$("cfgGId").value=cfg.googleClientId||"";
+  $("cfgSheetName").value=cfg.sheetName||"Timbreuse";updateTotals();
+  if(gToken){$("sheetSetupBox").style.display="none";$("sheetConnectedBox").style.display="block";}
+  else{$("sheetSetupBox").style.display="block";$("sheetConnectedBox").style.display="none";}
+  if(cfg.spreadsheetId)updateSheetLink();
 }
 function updateTotals(){const tot=cfg.target+cfg.baseOT;$("totalObligVal").textContent=tot%1===0?tot+"h":tot.toFixed(2)+"h";$("dailyCtVal").textContent=(tot/21.75).toFixed(2)+" ct";}
 function syncSettings(){
@@ -1013,7 +979,7 @@ $("btnSaveToday").addEventListener("click",async()=>{
   const date=nowKey(),e=ensureE(date);
   e.site=$("tdSite").value.trim();e.lunch=$("tdLunch").value;e.vacation=$("tdVac").value;
   e.extraUsed=$("tdHS").value;e.note=$("tdNote").value.trim();e.dinner=$("tdDinner").checked;
-  await saveAndSync(date);toast(cfg.syncEnabled?"Guardado ↗ Sync ✅":"Guardado local ✅","ok");
+  await saveAndSync(date);toast("Guardado ↗ Sheets ✅","ok");
 });
 
 $("btnCapture").addEventListener("click",()=>{$("photoCapture").value="";$("photoCapture").click();});
@@ -1034,7 +1000,7 @@ $("meSave").addEventListener("click",async()=>{
   e.start=$("me-start").value;e.end=$("me-end").value;e.lunch=$("me-lunch").value;
   e.vacation=String(parseFloat($("me-vac").value)||0);e.extraUsed=String(parseFloat($("me-hs").value)||0);
   e.site=$("me-site").value.trim();e.note=$("me-note").value.trim();e.dinner=$("me-dinner").checked;
-  await saveAndSync(date);closeEntry();toast(cfg.syncEnabled?"Guardado ↗ Sync ✅":"Guardado local ✅","ok");
+  await saveAndSync(date);closeEntry();toast("Guardado ↗ Sheets ✅","ok");
 });
 
 $("meDel").addEventListener("click",async()=>{
@@ -1042,12 +1008,11 @@ $("meDel").addEventListener("click",async()=>{
   entries=entries.filter(e=>e.date!==meEditDate);await saveAndSync();closeEntry();toast("Entrada eliminada","inf");
 });
 
-$("btnScriptConnect").addEventListener("click",connectScript);
-$("btnScriptSync").addEventListener("click",()=>scriptLoad());
-$("btnScriptDisc").addEventListener("click",disconnectScript);
+$("btnSheetsConnect").addEventListener("click",connectGoogle);
+$("btnSheetsSync").addEventListener("click",()=>sheetsLoad());
+$("btnSheetsDisc").addEventListener("click",disconnectGoogle);
 
 ["cfgName","cfgTarget","cfgBaseOT","cfgMorning","cfgDinner","cfgRegion","cfgLock"].forEach(id=>$(id)?.addEventListener("change",syncSettings));
-["cfgScriptUrl","cfgSyncToken"].forEach(id=>$(id)?.addEventListener("change",()=>{cfg.scriptUrl=normalizeScriptUrl($("cfgScriptUrl").value);cfg.syncToken=$("cfgSyncToken").value.trim();saveCfg();}));
 
 $("btnExpCsv").addEventListener("click",expCsv);$("btnExpJson").addEventListener("click",expJson);
 $("btnImpCsv").addEventListener("click",()=>{$("fileCsv").value="";$("fileCsv").click();});
@@ -1063,8 +1028,8 @@ document.querySelectorAll(".nb").forEach(b=>b.addEventListener("click",()=>showT
   loadCfg();loadLocal();applySettings();
   $("timerDate").textContent=fmtDate(nowKey());
   renderToday();startClock();
-  if(cfg.syncEnabled&&cfg.scriptUrl&&cfg.syncToken){setSyncStatus("idle","Sync ↻");setSyncConnected(true);}
-  else{setSyncStatus("idle","Local");}
+  // Auto-reconnect if we had a client ID (token needs fresh request each session)
+  if(cfg.googleClientId){setSyncStatus("idle","Google ↻");}
 })();
 </script>
 </body>
