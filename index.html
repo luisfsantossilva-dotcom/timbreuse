@@ -212,9 +212,18 @@ function setSyncStatus(type,txt){const p=$("syncPill");p.className="sync-pill sy
 
 async function gasRequest(action,data=null){
   const url=cfg.gasUrl;if(!url)throw new Error("URL GAS não configurado");
-  if(action==="read"){const res=await fetch(`${url}?action=read`);if(!res.ok)throw new Error(`HTTP ${res.status}`);return res.json();}
-  const res=await fetch(url,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({action,entries:data})});
-  if(!res.ok)throw new Error(`HTTP ${res.status}`);return res.json();
+  if(action==="read"){
+    const res=await fetch(`${url}?action=read&t=${Date.now()}`);
+    if(!res.ok)throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+  const res=await fetch(url,{
+    method:"POST",
+    headers:{"Content-Type":"text/plain"},
+    body:JSON.stringify({action,entries:data})
+  });
+  if(!res.ok)throw new Error(`HTTP ${res.status}`);
+  return res.json();
 }
 async function sheetsLoad(){
   if(!cfg.gasUrl){toast("Configura o URL GAS nos Réglages","inf");return;}
