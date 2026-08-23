@@ -25,6 +25,7 @@
       --rr:14px;--rs:8px;
     }
     *{box-sizing:border-box;margin:0;padding:0}
+    button,.chip,.ctab,.nb,.pb,.mtbl tbody tr,.wd{-webkit-user-select:none;-moz-user-select:none;user-select:none;touch-action:manipulation}
     html{-webkit-tap-highlight-color:transparent}
     body{font-family:'Outfit',system-ui,sans-serif;background:var(--bg);color:var(--t);min-height:100dvh;display:flex;flex-direction:column;max-width:560px;margin:0 auto}
     @media(min-width:560px){body{border-left:1px solid var(--bd);border-right:1px solid var(--bd)}}
@@ -118,7 +119,8 @@
 
     .chips{display:flex;gap:6px;overflow-x:auto;padding:14px 16px 0;scrollbar-width:none}
     .chips::-webkit-scrollbar{display:none}
-    .chip{flex-shrink:0;padding:5px 12px;border-radius:999px;font-size:.7rem;font-weight:700;background:var(--sf);border:1px solid var(--bd);color:var(--t2);cursor:pointer;white-space:nowrap;transition:all .15s}
+    .chip{flex-shrink:0;padding:5px 12px;border-radius:999px;font-size:.7rem;font-weight:700;background:var(--sf);border:1px solid var(--bd);color:var(--t2);cursor:pointer;white-space:nowrap;transition:all .15s;-webkit-user-select:none;-moz-user-select:none;user-select:none;touch-action:manipulation}
+    .chips{-webkit-user-select:none;user-select:none}
     .chip.on{background:var(--ad);border-color:var(--ab);color:var(--a)}
 
     .sum{display:grid;gap:7px}
