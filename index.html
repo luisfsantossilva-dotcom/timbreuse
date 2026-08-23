@@ -609,9 +609,7 @@ function getHol(y){
   const add=(key,name)=>s.set(key,name);
   add(`${y}-01-01`,"Nouvel An");
   add(dtK(addD(e,-2)),"Vendredi Saint");
-  add(dtK(addD(e,1)),"Lundi de Pâques");
   add(dtK(addD(e,39)),"Ascension");
-  add(dtK(addD(e,50)),"Lundi de Pentecôte");
   add(`${y}-08-01`,"Fête nationale");
   add(`${y}-12-25`,"Noël");
   if(cfg.region==="catholic"){
