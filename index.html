@@ -536,7 +536,12 @@
     <div class="sbody">
       <div class="sr2">
         <div><label class="flbl">Data</label><input type="date" id="adj-d" class="fi"></div>
-        <div><label class="flbl">Horas (+ ou -)</label><input type="number" id="adj-h" class="fi" step="0.25" value="0"></div>
+        <div><label class="flbl">Horas</label>
+          <div style="display:flex;gap:6px">
+            <button type="button" id="adj-sign" class="btn btn-s btn-sm" style="min-width:44px;font-size:1rem;font-weight:900;padding:9px 12px">+</button>
+            <input type="number" id="adj-h" class="fi" step="0.25" min="0" value="0" inputmode="decimal">
+          </div>
+        </div>
       </div>
       <div class="sr2 full"><label class="flbl">Motivo</label><input type="text" id="adj-n" class="fi" placeholder="Ex. dia pago, correção, ..."></div>
       <div style="background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.3);border-radius:var(--rs);padding:8px 10px;font-size:.72rem;color:var(--bl)">
@@ -1133,20 +1138,29 @@ function delAdj(i){
   renderYearlyLedger();
 }
 
+let adjSign=1;
+function setAdjSign(s){
+  adjSign=s;
+  const b=$("adj-sign");
+  b.textContent=s>0?"+":"−";
+  b.className="btn btn-sm "+(s>0?"btn-g":"btn-d");
+}
 function openAdjModal(){
   $("adj-d").value=nowK();
   $("adj-h").value=0;
   $("adj-n").value="";
+  setAdjSign(1);
   $("adjOverlay").classList.add("open");
 }
 function closeAdjModal(){$("adjOverlay").classList.remove("open");}
 
 function saveAdj(){
   const d=$("adj-d").value;
-  const h=parseFloat($("adj-h").value)||0;
+  const mag=Math.abs(parseFloat($("adj-h").value)||0);
+  const h=mag*adjSign;
   const n=$("adj-n").value.trim();
   if(!d){toast("Selecciona uma data","err");return;}
-  if(!h){toast("Valor tem de ser diferente de 0","err");return;}
+  if(!mag){toast("Valor tem de ser diferente de 0","err");return;}
   const y=mkY(d);
   curYear=Number(y);
   if(!ledger.years[y]) ledger.years[y]={initial:0,adjustments:[]};
@@ -1293,6 +1307,7 @@ $("bAdjAdd").onclick=openAdjModal;
 $("adjClose").onclick=closeAdjModal;
 $("adjOverlay").onclick=e=>{if(e.target===$("adjOverlay"))closeAdjModal();};
 $("adjSave").onclick=saveAdj;
+$("adj-sign").onclick=()=>setAdjSign(-adjSign);
 $("bLedgerSave").onclick=saveLedgerToSheet;
 $("ylgYrSel").addEventListener("change",()=>{curYear=Number($("ylgYrSel").value);renderYearlyLedger();});
 $("ylgInit").addEventListener("change",saveInitial);
