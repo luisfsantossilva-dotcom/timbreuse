@@ -170,6 +170,18 @@
     .wdrow .d{font-family:'Space Mono',monospace;color:var(--t3);font-size:.7rem}
     .wdrow .h{font-family:'Space Mono',monospace;font-weight:700;color:var(--a)}
 
+    .fi[type="date"]{color-scheme:dark}
+    .calbox{width:min(92vw,340px);background:var(--sf);border:1px solid var(--bd2);border-radius:16px;padding:14px;box-shadow:0 12px 40px rgba(0,0,0,.6)}
+    .calhd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .calhd .t{font-weight:700;font-size:.95rem}
+    .calnav{width:40px;height:36px;border-radius:10px;border:1px solid var(--bd2);background:var(--sf2);color:var(--t);font-size:1.15rem;font-weight:700;cursor:pointer}
+    .calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+    .caldow{font-size:.58rem;font-weight:700;text-transform:uppercase;color:var(--t3);text-align:center;padding:4px 0}
+    .cd{position:relative;height:38px;border-radius:9px;border:1px solid transparent;background:var(--bg);color:var(--t);font-family:'Space Mono',monospace;font-size:.78rem;font-weight:700;cursor:pointer}
+    .cd.we{color:var(--t3)}.cd.hol{color:var(--r)}.cd.tod{border-color:var(--ab)}
+    .cd.sel{background:var(--a);color:#000}
+    .cd.has::after{content:"";position:absolute;bottom:4px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--g)}
+    .cd.sel.has::after{background:#000}
     .overlay{position:fixed;inset:0;background:rgba(7,11,20,.82);z-index:500;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
     .overlay.open{opacity:1;pointer-events:all}
     .smodal{width:100%;max-width:560px;background:var(--sf);border-top:1px solid var(--bd);border-radius:20px 20px 0 0;padding:0 0 env(safe-area-inset-bottom,16px);transform:translateY(100%);transition:transform .28s cubic-bezier(.32,.72,0,1);max-height:92dvh;overflow-y:auto}
@@ -294,6 +306,7 @@
       <div id="ocrbox" class="ocrbox">
         <div id="ocrMsg" style="color:var(--t3)">—</div>
         <div class="ocrc" id="ocrChips"></div>
+        <details style="margin-top:8px"><summary class="muted" style="cursor:pointer">Ver texto lido</summary><pre id="ocrRaw" style="white-space:pre-wrap;font-family:'Space Mono',monospace;font-size:.68rem;color:var(--t2);margin-top:6px"></pre></details>
       </div>
       <p class="muted mt6">1.º toque = Início · 2.º toque = Fim · 6h15 → 6.25 ct · horas arredondadas a 15 min</p>
     </div>
@@ -494,6 +507,14 @@
         <div><label class="flbl">Data</label><input type="date" id="me-d" class="fi"></div>
         <div><label class="flbl">Chantier</label><input type="text" id="me-s" class="fi" placeholder="Local"></div>
       </div>
+      <div class="brow" style="margin-top:-2px">
+        <button type="button" class="btn btn-g btn-sm" id="meCal">📅 Calendário</button>
+        <button type="button" class="btn btn-s btn-sm" id="meYest">Ontem</button>
+        <button type="button" class="btn btn-s btn-sm" id="meToday">Hoje</button>
+        <button type="button" class="btn btn-s btn-sm" id="mePrevD" title="Dia anterior" style="min-width:42px">‹</button>
+        <button type="button" class="btn btn-s btn-sm" id="meNextD" title="Dia seguinte" style="min-width:42px">›</button>
+      </div>
+      <div id="meDateLbl" class="muted" style="margin-top:-6px;text-transform:capitalize"></div>
       <div class="sr2">
         <div><label class="flbl">Início</label><input type="text" id="me-st" class="fi" inputmode="text" autocomplete="off" placeholder="ex. 6:00 ou 6.25"></div>
         <div><label class="flbl">Fim</label><input type="text" id="me-en" class="fi" inputmode="text" autocomplete="off" placeholder="ex. 18:00 ou 17.75"></div>
@@ -552,6 +573,24 @@
       </div>
       <button class="btn btn-a" id="adjSave">Adicionar ajuste</button>
     </div>
+  </div>
+</div>
+
+<!-- Calendário para escolher o dia -->
+<div class="overlay" id="calOverlay" style="z-index:600;align-items:center">
+  <div class="calbox">
+    <div class="calhd">
+      <button type="button" class="calnav" id="calPrev">‹</button>
+      <span class="t" id="calTitle">—</span>
+      <button type="button" class="calnav" id="calNext">›</button>
+    </div>
+    <div class="calgrid" id="calDow"></div>
+    <div class="calgrid" id="calDays" style="margin-top:2px"></div>
+    <div class="brow" style="margin-top:12px;justify-content:space-between">
+      <button type="button" class="btn btn-g btn-sm" id="calToday">Hoje</button>
+      <button type="button" class="btn btn-s btn-sm" id="calClose">Fechar</button>
+    </div>
+    <p class="muted" style="margin-top:8px"><span style="color:var(--g)">●</span> dia com registo · <span style="color:var(--r)">vermelho</span> = feriado</p>
   </div>
 </div>
 
@@ -966,33 +1005,95 @@ function handlePhoto(f){
   };r.readAsDataURL(f);
 }
 function clearPhoto(){curPhoto=null;$("phPrev").style.display="none";$("ocrbox").style.display="none";$("bOcr").style.display="none";$("bClrPh").style.display="none";}
-async function runOCR(){
-  if(!curPhoto)return;
-  $("ocrbox").style.display="block";$("ocrMsg").textContent="⏳ A carregar Tesseract...";$("ocrChips").innerHTML="";
-  $("ocrIco").className="spin";
-  if(typeof Tesseract==="undefined")try{await ldScript("https://unpkg.com/tesseract.js@4/dist/tesseract.min.js");}catch{$("ocrMsg").textContent="Erro ao carregar OCR";$("ocrIco").className="";return;}
-  try{
-    const worker=await Tesseract.createWorker("fra",1,{logger:m=>{if(m.status==="recognizing text")$("ocrMsg").textContent=`OCR ${Math.round(m.progress*100)}%`;}});
-    const c=document.createElement("canvas"),img=new Image();
-    await new Promise(res=>{img.onload=res;img.src=curPhoto;});
-    const sc=Math.min(1,1400/img.width);c.width=img.width*sc;c.height=img.height*sc;
-    const ctx=c.getContext("2d");ctx.drawImage(img,0,0,c.width,c.height);
-    const id=ctx.getImageData(0,0,c.width,c.height);
-    for(let i=0;i<id.data.length;i+=4){const g=.299*id.data[i]+.587*id.data[i+1]+.114*id.data[i+2];const v=g<128?Math.max(0,g-30):Math.min(255,g+30);id.data[i]=id.data[i+1]=id.data[i+2]=v;}
-    ctx.putImageData(id,0,0);
-    const{data:{text}}=await worker.recognize(c.toDataURL("image/jpeg",.95));
-    await worker.terminate();
-    const re=/\b(\d{1,2})[h:\.](\d{2})\b/g,found=[];let m;
-    while((m=re.exec(text))!==null){const h=parseInt(m[1]),mn=parseInt(m[2]);if(h<=23&&mn<=59){const t=`${pad(h)}:${pad(mn)}`;if(!found.includes(t))found.push(t);}}
-    if(found.length){$("ocrMsg").textContent=`${found.length} hora(s) — toca para aplicar (arredondada a 15 min):`;$("ocrChips").innerHTML=found.map((t,i)=>`<button class="occhip" onclick="applyOcr('${t}',${i},${found.length})">${t} → ${qR(t)} · ${t2ct(qR(t))}ct</button>`).join("");}
-    else $("ocrMsg").textContent="Nenhuma hora detectada.";
-  }catch(err){$("ocrMsg").textContent="Erro: "+err.message;}
-  $("ocrIco").className="";$("ocrIco").textContent="🔍";
+/* Pré-processamento OCR — funções puras (sem DOM): iguais no browser e nos testes */
+function ocrGray(rgba,w,h){
+  const g=new Uint8Array(w*h);
+  for(let i=0,j=0;j<w*h;i+=4,j++) g[j]=(0.299*rgba[i]+0.587*rgba[i+1]+0.114*rgba[i+2])+0.5|0;
+  return g;
 }
-function applyOcr(t,i,tot){
+function ocrAdaptive(gray,w,h,block,C){
+  const W1=w+1, I=new Float64Array(W1*(h+1));
+  for(let y=0;y<h;y++){let row=0;for(let x=0;x<w;x++){row+=gray[y*w+x];I[(y+1)*W1+x+1]=I[y*W1+x+1]+row;}}
+  const r=block>>1, out=new Uint8Array(w*h);
+  for(let y=0;y<h;y++){
+    const y0=Math.max(0,y-r), y1=Math.min(h-1,y+r);
+    for(let x=0;x<w;x++){
+      const x0=Math.max(0,x-r), x1=Math.min(w-1,x+r);
+      const area=(x1-x0+1)*(y1-y0+1);
+      const sum=I[(y1+1)*W1+x1+1]-I[y0*W1+x1+1]-I[(y1+1)*W1+x0]+I[y0*W1+x0];
+      out[y*w+x]=gray[y*w+x] < (sum/area)*(1-C) ? 0 : 255;
+    }
+  }
+  return out;
+}
+function ocrToRGBA(bin,w,h,rgba){
+  for(let j=0,i=0;j<w*h;j++,i+=4){rgba[i]=rgba[i+1]=rgba[i+2]=bin[j];rgba[i+3]=255;}
+  return rgba;
+}
+/* RGBA -> RGBA binarizado. block ~ largura/14 (≥25) */
+function ocrBinarize(rgba,w,h,C){
+  const g=ocrGray(rgba,w,h), block=Math.max(25,Math.round(w/14))|1;
+  return ocrToRGBA(ocrAdaptive(g,w,h,block,C==null?0.15:C),w,h,rgba);
+}
+
+/* ── OCR (Tesseract v5) ── */
+async function loadTesseract(){
+  if(typeof Tesseract!=="undefined") return;
+  const urls=["https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js","https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"];
+  for(const u of urls){ try{ await ldScript(u); if(typeof Tesseract!=="undefined") return; }catch(_){} }
+  throw new Error("não consegui descarregar o leitor OCR (sem internet?)");
+}
+/* foto -> canvas ~1600px de largura, binarizado (corrige sombras e papel amarelo) */
+function ocrCanvasFrom(img,C){
+  const s=Math.min(3,1600/img.width);
+  const c=document.createElement("canvas");
+  c.width=Math.max(1,Math.round(img.width*s)); c.height=Math.max(1,Math.round(img.height*s));
+  const ctx=c.getContext("2d");
+  ctx.drawImage(img,0,0,c.width,c.height);
+  const d=ctx.getImageData(0,0,c.width,c.height);
+  ocrBinarize(d.data,c.width,c.height,C);
+  ctx.putImageData(d,0,0);
+  return c;
+}
+function ocrFindTimes(text){
+  const re=/\b(\d{1,2})[h:.](\d{2})\b/g,found=[];let m;
+  while((m=re.exec(text))!==null){const h=+m[1],mn=+m[2];if(h<=23&&mn<=59){const t=`${pad(h)}:${pad(mn)}`;if(!found.includes(t))found.push(t);}}
+  return found;
+}
+let ocrTap=0;
+async function runOCR(){
+  if(!curPhoto) return;
+  const msg=$("ocrMsg");
+  $("ocrbox").style.display="block"; msg.textContent="⏳ A carregar leitor..."; $("ocrChips").innerHTML=""; $("ocrRaw").textContent="";
+  $("ocrIco").className="spin"; ocrTap=0;
+  let worker=null;
+  try{
+    await loadTesseract();
+    worker=await Tesseract.createWorker("eng",1,{logger:m=>{
+      if(m.status==="recognizing text") msg.textContent=`A ler… ${Math.round(m.progress*100)}%`;
+    }});
+    await worker.setParameters({tessedit_pageseg_mode:"6"});
+    const img=new Image();
+    await new Promise((res,rej)=>{img.onload=res;img.onerror=()=>rej(new Error("não consegui abrir a imagem"));img.src=curPhoto;});
+    let found=[],raw="";
+    for(const C of [0.10,0.15]){                       // 2.ª tentativa só se a 1.ª leu pouco
+      const r=await worker.recognize(ocrCanvasFrom(img,C));
+      raw=r.data.text; found=ocrFindTimes(raw);
+      if(found.length>=2) break;
+    }
+    $("ocrRaw").textContent=raw.trim()||"(nada lido)";
+    if(found.length){
+      msg.textContent=`${found.length} hora(s) — toca: 1.º = Início, seguintes = Fim`;
+      $("ocrChips").innerHTML=found.map(t=>`<button class="occhip" onclick="applyOcr('${t}')">${t} → ${qR(t)} · ${t2ct(qR(t))}ct</button>`).join("");
+    } else msg.textContent="Nenhuma hora detectada — tira a foto de frente, com boa luz, com o cartão a encher o ecrã.";
+  }catch(err){ msg.textContent="Erro: "+(err&&err.message||err); }
+  finally{ try{ if(worker) await worker.terminate(); }catch(_){} $("ocrIco").className=""; $("ocrIco").textContent="🔍"; }
+}
+function applyOcr(t){
   const qt=qR(t),e=ensE(nowK());
-  if(i===0&&tot>1){e.start=qt;toast(`Início → ${qt} (${t2ct(qt)} ct)`,"ok");}
+  if(ocrTap===0){e.start=qt;toast(`Início → ${qt} (${t2ct(qt)} ct)`,"ok");}
   else{e.end=qt;toast(`Fim → ${qt} (${t2ct(qt)} ct)`,"ok");}
+  ocrTap++;
   touchEntry(e);
   saveAndSync();renderToday();
 }
@@ -1032,14 +1133,62 @@ function renderChart(){
 }
 
 /* ══ Manual entry modal ══ */
-function openEntry(d){
-  meDate=d||null;$("mTitle").textContent=d?`Editar — ${fmtD(d)}`:"Nova entrada";
-  const e=d?getE(d):null;
-  $("me-d").value=d||nowK();$("me-st").value=e?.start||"";$("me-en").value=e?.end||"";
+function fillMe(e){
+  $("me-st").value=e?.start||"";$("me-en").value=e?.end||"";
   $("me-l").value=e?.lunch||"1";$("me-v").value=parseFloat(e?.vacation)||0;
   $("me-h").value=parseFloat(e?.extraUsed)||0;$("me-s").value=e?.site||"";
   $("me-n").value=e?.note||"";$("me-din").checked=!!e?.dinner;
-  $("mDel").style.display=d?"block":"none";updateMePrev();$("eOverlay").classList.add("open");
+}
+/* Chamada sempre que o dia do formulário muda (calendário, atalhos ou campo de data).
+   Se o dia já tem registo, carrega-o (para não apagar horas sem querer);
+   se vinhas de um dia com registo para um dia vazio, limpa o formulário. */
+function onMeDate(silent){
+  const k=$("me-d").value;
+  if(!k){ updateMePrev(); return; }          // data a meio de ser escrita: não mexer
+  const e=getE(k);
+  if(e){
+    if(meDate!==k){ fillMe(e); if(!silent) toast("Esse dia já tem registo — a editar","inf"); }
+    meDate=k; $("mTitle").textContent=`Editar — ${fmtD(k)}`; $("mDel").style.display="block";
+  }else{
+    if(meDate!==null) fillMe(null);
+    meDate=null; $("mTitle").textContent="Nova entrada"; $("mDel").style.display="none";
+  }
+  updateMePrev();
+}
+function setMeDate(k){ $("me-d").value=k; onMeDate(false); }
+function shiftMeDate(n){ const d=parseDt($("me-d").value||nowK()); d.setDate(d.getDate()+n); setMeDate(dtK(d)); }
+function openEntry(d){
+  $("me-d").value=d||nowK();
+  meDate=null; fillMe(null);
+  onMeDate(true);
+  $("eOverlay").classList.add("open");
+}
+/* ── Calendário ── */
+const MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+let calY=0,calM=0;
+function openCal(){
+  const d=parseDt($("me-d").value||nowK())||new Date();
+  calY=d.getFullYear();calM=d.getMonth();renderCal();
+  $("calOverlay").classList.add("open");
+}
+function closeCal(){$("calOverlay").classList.remove("open");}
+function renderCal(){
+  $("calTitle").textContent=`${MESES[calM]} ${calY}`;
+  $("calDow").innerHTML=["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"].map(x=>`<div class="caldow">${x}</div>`).join("");
+  const first=(new Date(calY,calM,1).getDay()+6)%7, nd=new Date(calY,calM+1,0).getDate();
+  const sel=$("me-d").value, tk=nowK();
+  let html="";
+  for(let i=0;i<first;i++) html+="<span></span>";
+  for(let d=1;d<=nd;d++){
+    const k=`${calY}-${pad(calM+1)}-${pad(d)}`, en=getE(k);
+    const cls=["cd"];
+    if(isHol(k)) cls.push("hol"); else if(isWE(k)) cls.push("we");
+    if(k===tk) cls.push("tod");
+    if(k===sel) cls.push("sel");
+    if(en&&(en.start||(parseFloat(en.vacation)||0)>0||(parseFloat(en.extraUsed)||0)>0)) cls.push("has");
+    html+=`<button type="button" class="${cls.join(" ")}" data-k="${k}">${d}</button>`;
+  }
+  $("calDays").innerHTML=html;
 }
 function closeEntry(){$("eOverlay").classList.remove("open");meDate=null;}
 /* Aceita: 6 · 6:30 · 6h30 · 0630 · 630 · e centièmes 6.25 / 17,75  → "HH:MM" ; "" se vazio ; null se inválido */
@@ -1057,6 +1206,8 @@ function parseTimeFlex(s){
 }
 function meTimeVal(id){ const p=parseTimeFlex($(id).value); return p===null?null:(p===""?"":qR(p)); }
 function updateMePrev(){
+  const dv=$("me-d").value, dd=dv?parseDt(dv):null;
+  $("meDateLbl").textContent=dd?dd.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long",year:"numeric"})+(isHol(dv)?" · feriado: "+holName(dv):""):"Escolhe um dia";
   const pS=parseTimeFlex($("me-st").value), pE=parseTimeFlex($("me-en").value);
   const hint=$("meHint");
   if(pS===null||pE===null){ hint.textContent="⚠️ Hora inválida — usa 6:00, 6h30, 0600 ou 6.25"; hint.style.color="var(--r)"; }
@@ -1303,6 +1454,18 @@ $("phCap").onchange=ev=>handlePhoto(ev.target.files?.[0]);
 $("phGal").onchange=ev=>handlePhoto(ev.target.files?.[0]);
 $("bOcr").onclick=runOCR;$("bClrPh").onclick=clearPhoto;
 
+$("meCal").onclick=openCal;
+$("meToday").onclick=()=>setMeDate(nowK());
+$("meYest").onclick=()=>{const d=new Date();d.setDate(d.getDate()-1);setMeDate(dtK(d));};
+$("mePrevD").onclick=()=>shiftMeDate(-1);
+$("meNextD").onclick=()=>shiftMeDate(1);
+$("me-d").addEventListener("change",()=>onMeDate(false));
+$("calPrev").onclick=()=>{calM--;if(calM<0){calM=11;calY--;}renderCal();};
+$("calNext").onclick=()=>{calM++;if(calM>11){calM=0;calY++;}renderCal();};
+$("calToday").onclick=()=>{setMeDate(nowK());closeCal();};
+$("calClose").onclick=closeCal;
+$("calOverlay").onclick=e=>{if(e.target===$("calOverlay"))closeCal();};
+$("calDays").onclick=e=>{const b=e.target.closest("[data-k]");if(b){setMeDate(b.dataset.k);closeCal();}};
 $("fabAdd").onclick=()=>openEntry(null);
 $("mClose").onclick=closeEntry;
 $("eOverlay").onclick=e=>{if(e.target===$("eOverlay"))closeEntry();};
