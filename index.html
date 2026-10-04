@@ -495,9 +495,10 @@
         <div><label class="flbl">Chantier</label><input type="text" id="me-s" class="fi" placeholder="Local"></div>
       </div>
       <div class="sr2">
-        <div><label class="flbl">Início</label><input type="time" id="me-st" class="fi" step="900"></div>
-        <div><label class="flbl">Fim</label><input type="time" id="me-en" class="fi" step="900"></div>
+        <div><label class="flbl">Início</label><input type="text" id="me-st" class="fi" inputmode="text" autocomplete="off" placeholder="ex. 6:00 ou 6.25"></div>
+        <div><label class="flbl">Fim</label><input type="text" id="me-en" class="fi" inputmode="text" autocomplete="off" placeholder="ex. 18:00 ou 17.75"></div>
       </div>
+      <div id="meHint" class="muted" style="margin-top:-4px;min-height:1.4em">Escreve 6:00 · 6h30 · 0600 · ou em centièmes 6.25</div>
       <div class="sr2">
         <div><label class="flbl">Pause midi</label>
           <select id="me-l" class="fi">
@@ -519,8 +520,10 @@
       <div style="background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.3);border-radius:var(--rs);padding:8px 10px;font-size:.72rem;color:var(--bl)">
         ℹ️ Horas arredondadas automaticamente a 15 min (8h23 → 8h15 → 8.25 ct)
       </div>
-      <button class="btn btn-a" id="mSave">💾 Guardar ↗ Sheets</button>
-      <button class="delbtn" id="mDel" style="display:none">Eliminar esta entrada</button>
+      <div style="position:sticky;bottom:0;background:var(--sf);padding:10px 0 4px;display:grid;gap:8px;z-index:5;border-top:1px solid var(--bd)">
+        <button class="btn btn-a" id="mSave">💾 Guardar ↗ Sheets</button>
+        <button class="delbtn" id="mDel" style="display:none">Eliminar esta entrada</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1039,8 +1042,29 @@ function openEntry(d){
   $("mDel").style.display=d?"block":"none";updateMePrev();$("eOverlay").classList.add("open");
 }
 function closeEntry(){$("eOverlay").classList.remove("open");meDate=null;}
+/* Aceita: 6 · 6:30 · 6h30 · 0630 · 630 · e centièmes 6.25 / 17,75  → "HH:MM" ; "" se vazio ; null se inválido */
+function parseTimeFlex(s){
+  s=String(s==null?"":s).trim().toLowerCase().replace(/\s+/g,"");
+  if(!s) return "";
+  let x,tot;
+  if((x=s.match(/^(\d{1,2})[:h](\d{1,2})?$/))){ tot=(+x[1])*60+(x[2]===undefined?0:+x[2]); if(x[2]!==undefined&&+x[2]>59) return null; }
+  else if((x=s.match(/^(\d{1,2})[.,](\d{1,3})$/))){ tot=Math.round(parseFloat(x[1]+"."+x[2])*60); }
+  else if((x=s.match(/^(\d{3,4})$/))){ const q=x[1].padStart(4,"0"); if(+q.slice(2)>59) return null; tot=(+q.slice(0,2))*60+(+q.slice(2)); }
+  else if((x=s.match(/^(\d{1,2})$/))){ tot=(+x[1])*60; }
+  else return null;
+  if(tot<0||tot>=24*60) return null;
+  return pad(Math.floor(tot/60))+":"+pad(tot%60);
+}
+function meTimeVal(id){ const p=parseTimeFlex($(id).value); return p===null?null:(p===""?"":qR(p)); }
 function updateMePrev(){
-  const st=qR($("me-st").value), en=qR($("me-en").value);
+  const pS=parseTimeFlex($("me-st").value), pE=parseTimeFlex($("me-en").value);
+  const hint=$("meHint");
+  if(pS===null||pE===null){ hint.textContent="⚠️ Hora inválida — usa 6:00, 6h30, 0600 ou 6.25"; hint.style.color="var(--r)"; }
+  else{
+    const a=pS?`${pS} → ${qR(pS)} (${t2ct(qR(pS))} ct)`:"—", b=pE?`${pE} → ${qR(pE)} (${t2ct(qR(pE))} ct)`:"—";
+    hint.textContent=`Início ${a} · Fim ${b}`; hint.style.color="";
+  }
+  const st=pS?qR(pS):"", en=pE?qR(pE):"";
   const fake={date:$("me-d").value||nowK(),start:st,end:en,lunch:$("me-l").value,vacation:$("me-v").value,extraUsed:$("me-h").value};
   const{worked,balance}=calcDay(fake);
   if(fake.start&&fake.end){$("meW").textContent=ct(worked)+" ct";$("meB").textContent=ctS(balance)+" ct";$("meB").className=balance>=0?"pos":"neg";}
@@ -1287,9 +1311,11 @@ $("eOverlay").onclick=e=>{if(e.target===$("eOverlay"))closeEntry();};
 $("mSave").onclick=async()=>{
   const d=$("me-d").value;if(!d){toast("Selecciona uma data","err");return;}
   if(isHol(d)&&cfg.lockHolidays){toast("Feriado bloqueado","err");return;}
+  const vS=meTimeVal("me-st"), vE=meTimeVal("me-en");
+  if(vS===null||vE===null){toast("Hora inválida — usa 6:00, 6h30, 0600 ou 6.25","err");return;}
   const e=ensE(d);
-  e.start=qR($("me-st").value);
-  e.end=qR($("me-en").value);
+  e.start=vS;
+  e.end=vE;
   e.lunch=$("me-l").value;
   e.vacation=String(parseFloat($("me-v").value)||0);
   e.extraUsed=String(parseFloat($("me-h").value)||0);
